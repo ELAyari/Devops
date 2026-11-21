@@ -2,10 +2,8 @@ pipeline {
     agent any
 
     tools {
-        // Uncomment and adjust if your Jenkins has these configured
-        // maven 'Maven-3.9'
-        // nodejs 'NodeJS-18'
-    }
+         maven 'M2_HOME'
+    	 nodejs 'NodeJS26'    }
 
     environment {
         // Keep builds from polluting the workspace unnecessarily
