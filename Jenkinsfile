@@ -1,19 +1,17 @@
 pipeline {
     agent any
 
-    tools {
-         maven 'M2_HOME'
-    	 nodejs 'NodeJS26'    }
-
     environment {
-        // Keep builds from polluting the workspace unnecessarily
-        MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+        DOCKER_HUB_USER = 'hasdryball'
+        IMAGE_NAME      = "${DOCKER_HUB_USER}/devops-app"
+        IMAGE_TAG       = "${env.BUILD_NUMBER}"
+        DOCKER_CREDS_ID = 'docker-hub-creds'
     }
 
     stages {
         stage('Checkout') {
             steps {
-      		checkout scm
+                checkout scm
                 sh 'git rev-parse --short HEAD'
             }
         }
@@ -34,6 +32,23 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker Build') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest -f Dockerfile ."
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    docker.withRegistry('', DOCKER_CREDS_ID) {
+                        sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                        sh "docker push ${IMAGE_NAME}:latest"
+                    }
+                }
+            }
+        }
     }
 
     post {
@@ -41,6 +56,8 @@ pipeline {
             archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
             archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true, allowEmptyArchive: true
         }
-        always {       }
+        always {
+            sh "docker rmi -f \$(docker images -q ${IMAGE_NAME}) || true"
+        }
     }
 }
