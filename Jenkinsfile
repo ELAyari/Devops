@@ -20,6 +20,15 @@ pipeline {
             }
         }
 
+        stage('Backend - Build & Test') {
+            steps {
+                dir('backend') {
+                    // Compilation et tests du backend
+                    sh 'mvn -B clean package'
+                }
+            }
+        }
+
         stage('Frontend - Build') {
             steps {
                 dir('frontend') {
@@ -32,7 +41,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 dir('backend') {
-                    // Cette commande fait le build, les tests ET l'analyse Sonar
+                    // Commande complète pour l'analyse Sonar avec Maven
                     sh '''
                         mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                         -Dsonar.projectKey=DevOps-AppGestionDesProjets \
@@ -80,3 +89,4 @@ pipeline {
         }
     }
 }
+
