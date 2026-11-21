@@ -1,14 +1,16 @@
 pipeline {
     agent any
 
+    triggers {
+        githubPush() // Pour le webhook (si tu l'as configuré)
+    }
+
     environment {
         DOCKER_HUB_USER = 'hasdryball'
         IMAGE_NAME      = "${DOCKER_HUB_USER}/devops-app"
         IMAGE_TAG       = "${env.BUILD_NUMBER}"
         DOCKER_CREDS_ID = 'docker-hub-creds'
-        // These names must match your Jenkins Global Configuration exactly
-        SONAR_SERVER    = 'SonarQube'
-        SONAR_TOOL      = 'SonarScanner'
+        SONAR_SERVER    = 'SonarQube' // Nom dans Configurer le système
     }
 
     stages {
@@ -19,15 +21,16 @@ pipeline {
             }
         }
 
-        stage('Backend - Clean & Package') {
+        stage('Backend - Build & Test') {
             steps {
                 dir('backend') {
-                    sh 'mvn -B clean package -DskipTests'
+                    // On compile et on lance les tests (enlevant -DskipTests pour Sonar)
+                    sh 'mvn -B clean package'
                 }
             }
         }
 
-        stage('Frontend - Clean & Package') {
+        stage('Frontend - Build') {
             steps {
                 dir('frontend') {
                     sh 'npm ci'
@@ -36,25 +39,22 @@ pipeline {
             }
         }
 
-        // --- SONARQUBE ANALYSIS ---
         stage('SonarQube Analysis') {
             steps {
-                // withSonarQubeEnv injects SONAR_HOST_URL and SONAR_AUTH_TOKEN
+                // Injecte l'URL et le token depuis Jenkins
                 withSonarQubeEnv("${SONAR_SERVER}") {
-                    // Use the scanner installed in Global Tool Configuration
-                    def scannerHome = tool "${SONAR_TOOL}"
-                    // Run from project root where sonar-project.properties is located
-                    sh "${scannerHome}/bin/sonar-scanner"
+                    dir('backend') {
+                        // L'analyse Maven demandée par le PDF
+                        sh 'mvn sonar:sonar'
+                    }
                 }
             }
         }
 
-        // --- QUALITY GATE (Optional but recommended) ---
         stage('Quality Gate') {
             steps {
-                // Wait for SonarQube to compute the quality gate result
                 timeout(time: 1, unit: 'HOURS') {
-                    // abortPipeline: true fails the build if the gate fails
+                    // Attend le résultat de SonarQube (nécessite le webhook Sonar -> Jenkins)
                     waitForQualityGate abortPipeline: true
                 }
             }
