@@ -8,15 +8,16 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Backend jar (already built by Maven in the pipeline)
+# Backend jar (built by Maven in the pipeline)
 COPY backend/target/*.jar app.jar
 
-# Frontend build output (already built by npm in the pipeline)
-COPY frontend/dist/ /usr/share/nginx/html/
+# Frontend build output (Angular 17+ puts it in dist/frontend/browser/)
+COPY frontend/dist/frontend/browser/ /usr/share/nginx/html/
 
 # Nginx config: serve frontend, proxy API to backend
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80 8080
 
+# Start backend in background, nginx in foreground
 CMD ["sh", "-c", "java -jar app.jar & nginx -g 'daemon off;'"]
