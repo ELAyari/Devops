@@ -6,6 +6,9 @@ pipeline {
         IMAGE_NAME      = "${DOCKER_HUB_USER}/devops-app"
         IMAGE_TAG       = "${env.BUILD_NUMBER}"
         DOCKER_CREDS_ID = 'docker-hub-creds'
+        // These names must match your Jenkins Global Configuration exactly
+        SONAR_SERVER    = 'SonarQube'
+        SONAR_TOOL      = 'SonarScanner'
     }
 
     stages {
@@ -33,6 +36,30 @@ pipeline {
             }
         }
 
+        // --- SONARQUBE ANALYSIS ---
+        stage('SonarQube Analysis') {
+            steps {
+                // withSonarQubeEnv injects SONAR_HOST_URL and SONAR_AUTH_TOKEN
+                withSonarQubeEnv("${SONAR_SERVER}") {
+                    // Use the scanner installed in Global Tool Configuration
+                    def scannerHome = tool "${SONAR_TOOL}"
+                    // Run from project root where sonar-project.properties is located
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }
+            }
+        }
+
+        // --- QUALITY GATE (Optional but recommended) ---
+        stage('Quality Gate') {
+            steps {
+                // Wait for SonarQube to compute the quality gate result
+                timeout(time: 1, unit: 'HOURS') {
+                    // abortPipeline: true fails the build if the gate fails
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest -f Dockerfile ."
@@ -46,9 +73,7 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    '''
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
                     sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                     sh "docker push ${IMAGE_NAME}:latest"
                     sh 'docker logout || true'
