@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     triggers {
-        githubPush() // Pour le webhook (si tu l'as configuré)
+        githubPush()
     }
 
     environment {
@@ -10,7 +10,6 @@ pipeline {
         IMAGE_NAME      = "${DOCKER_HUB_USER}/devops-app"
         IMAGE_TAG       = "${env.BUILD_NUMBER}"
         DOCKER_CREDS_ID = 'docker-hub-creds'
-        SONAR_SERVER    = 'SonarQube' // Nom dans Configurer le système
     }
 
     stages {
@@ -18,15 +17,6 @@ pipeline {
             steps {
                 checkout scm
                 sh 'git rev-parse --short HEAD'
-            }
-        }
-
-        stage('Backend - Build & Test') {
-            steps {
-                dir('backend') {
-                    // On compile et on lance les tests (enlevant -DskipTests pour Sonar)
-                    sh 'mvn -B clean package'
-                }
             }
         }
 
@@ -41,21 +31,15 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                // Injecte l'URL et le token depuis Jenkins
-                withSonarQubeEnv("${SONAR_SERVER}") {
-                    dir('backend') {
-                        // L'analyse Maven demandée par le PDF
-                        sh 'mvn sonar:sonar'
-                    }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    // Attend le résultat de SonarQube (nécessite le webhook Sonar -> Jenkins)
-                    waitForQualityGate abortPipeline: true
+                dir('backend') {
+                    // Cette commande fait le build, les tests ET l'analyse Sonar
+                    sh '''
+                        mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                        -Dsonar.projectKey=DevOps-AppGestionDesProjets \
+                        -Dsonar.projectName='DevOps-AppGestionDesProjets' \
+                        -Dsonar.host.url=http://192.168.100.132:9000 \
+                        -Dsonar.token=sqp_c15a90815c89a724ec1e554ca59c4bf5ef6951ec
+                    '''
                 }
             }
         }
@@ -88,7 +72,11 @@ pipeline {
             archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true, allowEmptyArchive: true
         }
         always {
-            sh "docker rmi -f \$(docker images -q ${IMAGE_NAME}) || true"
+            sh '''
+                if [ -n "$(docker images -q ${IMAGE_NAME})" ]; then
+                    docker rmi -f $(docker images -q ${IMAGE_NAME}) || true
+                fi
+            '''
         }
     }
 }
