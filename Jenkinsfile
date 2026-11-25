@@ -35,7 +35,8 @@ pipeline {
                     set -e
 
                     echo "==> Ensuring MySQL is up"
-                    docker compose up -d mysql
+                    docker rm -f devops-appgestiondesprojets-mysql-1 2>/dev/null || true
+		    docker compose up -d mysql
 
                     echo "==> Ensuring SonarQube is up"
                     if ! docker ps --format '{{.Names}}' | grep -qx 'sonarqube'; then
