@@ -140,22 +140,18 @@ pipeline {
         success {
             archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
             archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true, allowEmptyArchive: true
-	    emailext subject: "BUILD SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: "Job    : ${env.JOB_NAME}\n" +
-                           "Build  : ${env.BUILD_NUMBER}\n" +
-                           "Branch : ${env.GIT_BRANCH}\n" +
-                           "URL    : ${env.BUILD_URL}\n" +
-                           "Status : SUCCESS",
-                     attachLog: true
+	     withCredentials([string(credentialsId: 'notify-email', variable: 'MAIL_TO')]) {
+                emailext to: env.MAIL_TO,
+                         subject: "BUILD SUCCESS - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                         body: "URL: ${env.BUILD_URL}\nStatus: SUCCESS",
+                         attachLog: true
         }
 	failure {
-            emailext subject: "BUILD FAILED - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: "Job     : ${env.JOB_NAME}\n" +
-                           "Build   : ${env.BUILD_NUMBER}\n" +
-                           "Branch  : ${env.GIT_BRANCH}\n" +
-                           "URL     : ${env.BUILD_URL}\n" +
-                           "Console : ${env.BUILD_URL}console",
-                     attachLog: true
+            ewithCredentials([string(credentialsId: 'notify-email', variable: 'MAIL_TO')]) {
+                emailext to: env.MAIL_TO,
+                         subject: "BUILD FAILED - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                         body: "Console: ${env.BUILD_URL}console",
+                         attachLog: true
         }
         always {
             // Never delete :latest, only the build-specific tag
