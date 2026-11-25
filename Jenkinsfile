@@ -21,7 +21,8 @@ pipeline {
         SONAR_PROJECT_NAME = 'DevOps-AppGestionDesProjets'
         MYSQL_CONTAINER    = 'devops-appgestiondesprojets-mysql-1'
         SONAR_CONTAINER    = 'sonarqube'
-    }
+	COMPOSE_PROJECT_NAME = 'devops-appgestiondesprojets' 
+   }
 
     stages {
 
@@ -34,14 +35,14 @@ pipeline {
                     set -e
 
                     echo "==> MySQL"
-                    if docker inspect "$MYSQL_CONTAINER" >/dev/null 2>&1; then
+                    if docker container inspect "$MYSQL_CONTAINER" >/dev/null 2>&1; then
                         docker start "$MYSQL_CONTAINER"
                     else
                         docker compose up -d mysql
                     fi
 
                     echo "==> SonarQube (no wait here)"
-                    if docker inspect "$SONAR_CONTAINER" >/dev/null 2>&1; then
+                    if docker container inspect "$SONAR_CONTAINER" >/dev/null 2>&1; then
                         docker start "$SONAR_CONTAINER"
                     else
                         docker compose -f docker-compose.tools.yml up -d sonarqube
