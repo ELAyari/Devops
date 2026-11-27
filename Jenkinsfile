@@ -69,10 +69,18 @@ pipeline {
             }
         }
 
-        stage('Backend - Build & Test') {
+        stage('Build') {
             steps {
                 dir('backend') {
-                    sh 'mvn -B clean package'
+                    sh 'mvn -B clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                dir('backend') {
+                    sh 'mvn -B test'
                 }
             }
         }
