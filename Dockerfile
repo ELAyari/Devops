@@ -9,6 +9,7 @@ FROM eclipse-temurin:17-jre
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends nginx && \
+    rm -f /etc/nginx/sites-enabled/default && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
