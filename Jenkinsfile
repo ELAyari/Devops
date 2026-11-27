@@ -26,13 +26,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-                sh 'git rev-parse --short HEAD'
-            }
-        }
-
         // Create the container if it doesn't exist, otherwise just start it.
         // Only MySQL is awaited here; SonarQube boots in the background
         // while Maven and npm run, and is awaited right before the analysis.
@@ -69,10 +62,17 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                sh 'git rev-parse --short HEAD'
+            }
+        }
+
+        stage('Backend - Build & Test') {
             steps {
                 dir('backend') {
-                    sh 'mvn -B clean package -DskipTests'
+                    sh 'mvn -B clean package'
                 }
             }
         }
@@ -82,14 +82,6 @@ pipeline {
                 dir('frontend') {
                     sh 'npm ci'
                     sh 'npm run build -- --configuration production'
-                }
-            }
-        }
-
-        stage('Tests') {
-            steps {
-                dir('backend') {
-                    sh 'mvn -B test'
                 }
             }
         }
