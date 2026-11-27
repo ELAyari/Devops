@@ -26,9 +26,6 @@ pipeline {
 
     stages {
 
-        // Create the container if it doesn't exist, otherwise just start it.
-        // Only MySQL is awaited here; SonarQube boots in the background
-        // while Maven and npm run, and is awaited right before the analysis.
         stage('Ensure Infrastructure') {
             steps {
                 sh '''
