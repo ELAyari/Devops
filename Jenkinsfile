@@ -59,12 +59,6 @@ pipeline {
             }
         }
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-                sh 'git rev-parse --short HEAD'
-            }
-        }
 
         stage('Build') {
             steps {
