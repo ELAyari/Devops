@@ -10,7 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/entreprise")
 @AllArgsConstructor
-@CrossOrigin("*")
+@CrossOrigin("http://localhost:8082")
 public class EntrepriseController {
 
     IEntrepriseService entrepriseService;

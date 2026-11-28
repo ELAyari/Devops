@@ -10,7 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/projet")
 @AllArgsConstructor
-@CrossOrigin("*")
+@CrossOrigin("http://localhost:8082")
 public class ProjetController {
 
     IProjetService projetService;
